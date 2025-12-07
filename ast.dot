@@ -1,0 +1,36 @@
+digraph AST {
+  node [shape=box, fontname="Arial"];
+  node0x151104080 [label="Block"];
+  node0x151104080 -> node0x150704220 [label="L"];
+  node0x150704220 [label="Block"];
+  node0x150704220 -> node0x150704140 [label="L"];
+  node0x150704140 [label="Block"];
+  node0x150704140 -> node0x1507040a0 [label="L"];
+  node0x1507040a0 [label="Assign\n(a)"];
+  node0x1507040a0 -> node0x150704080 [label="R"];
+  node0x150704080 [label="10"];
+  node0x150704140 -> node0x150704100 [label="R"];
+  node0x150704100 [label="Assign\n(b)"];
+  node0x150704100 -> node0x1507040e0 [label="R"];
+  node0x1507040e0 [label="5"];
+  node0x150704220 -> node0x150704200 [label="R"];
+  node0x150704200 [label="Print"];
+  node0x150704200 -> node0x1507041e0 [label="L"];
+  node0x1507041e0 [label="+"];
+  node0x1507041e0 -> node0x150704160 [label="L"];
+  node0x150704160 [label="Var\na"];
+  node0x1507041e0 -> node0x1507041a0 [label="R"];
+  node0x1507041a0 [label="Var\nb"];
+  node0x151104080 -> node0x151004080 [label="R"];
+  node0x151004080 [label="IF"];
+  node0x151004080 -> node0x150605fc0 [label="L"];
+  node0x150605fc0 [label=">"];
+  node0x150605fc0 -> node0x1506060c0 [label="L"];
+  node0x1506060c0 [label="Var\na"];
+  node0x150605fc0 -> node0x150606040 [label="R"];
+  node0x150606040 [label="Var\nb"];
+  node0x151004080 -> node0x150605d60 [label="R"];
+  node0x150605d60 [label="Print"];
+  node0x150605d60 -> node0x150605fe0 [label="L"];
+  node0x150605fe0 [label="100"];
+}
