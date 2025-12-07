@@ -4,11 +4,11 @@
 #include "ast.h"
 
 extern int yylex();
+extern int yylineno;
 void yyerror(const char* s);
-ASTNode* root; // 전역 AST 루트
+ASTNode* root; 
 %}
 
-/* Mac 기본 Bison 호환성을 위한 옵션 */
 %error-verbose
 
 %union {
@@ -19,15 +19,13 @@ ASTNode* root; // 전역 AST 루트
 
 %token <ival> NUMBER
 %token <sval> IDENTIFIER
-%token PRINT IF LET PIPE
+%token TOK_PRINT TOK_IF TOK_WHILE TOK_SCAN TOK_LET TOK_PIPE
 %token PLUS MINUS MULT DIV ASSIGN EQ LT GT
 %token LPAREN RPAREN LBRACE RBRACE SEMI
 
-/* 타입 지정 */
 %type <node> program stmt_list stmt expr 
 
-/* 연산자 우선순위 */
-%left PIPE 
+%left TOK_PIPE 
 %left EQ LT GT
 %left PLUS MINUS
 %left MULT DIV
@@ -46,20 +44,24 @@ stmt_list:
     ;
 
 stmt:
-    LET IDENTIFIER ASSIGN expr SEMI { 
+    TOK_LET IDENTIFIER ASSIGN expr SEMI { 
         $$ = new_assign_node($2, $4);
     }
     | IDENTIFIER ASSIGN expr SEMI {
         $$ = new_assign_node($1, $3);
     }
-    | PRINT LPAREN expr RPAREN SEMI {
+    | TOK_PRINT LPAREN expr RPAREN SEMI {
         $$ = new_print_node($3);
     }
-    | expr PIPE PRINT SEMI {  /* 파이프 문법: 10 |> print; */
+    | expr TOK_PIPE TOK_PRINT SEMI {
         $$ = new_print_node($1);
     }
-    | IF LPAREN expr RPAREN LBRACE stmt_list RBRACE {
+    | TOK_IF LPAREN expr RPAREN LBRACE stmt_list RBRACE {
         $$ = new_if_node($3, $6);
+    }
+    /* [NEW] While 문법 */
+    | TOK_WHILE LPAREN expr RPAREN LBRACE stmt_list RBRACE {
+        $$ = new_while_node($3, $6);
     }
     ;
 
@@ -72,6 +74,8 @@ expr:
     | expr LT expr { $$ = new_bin_op_node(LT, $1, $3); }
     | expr GT expr { $$ = new_bin_op_node(GT, $1, $3); }
     | LPAREN expr RPAREN { $$ = $2; }
+    /* [NEW] Scan 문법 (함수 호출처럼 사용) */
+    | TOK_SCAN LPAREN RPAREN { $$ = new_scan_node(); }
     | NUMBER { $$ = new_num_node($1); }
     | IDENTIFIER { $$ = new_id_node($1); }
     ;
@@ -79,7 +83,6 @@ expr:
 %%
 
 void yyerror(const char* s) {
-    // 핵심 수정 사항: 이 변수가 외부에 있음을 알림
     extern int yylineno; 
     fprintf(stderr, "Error: %s at line %d\n", s, yylineno);
 }

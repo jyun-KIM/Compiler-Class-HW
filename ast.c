@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "ast.h"
-#include "parser.tab.h" // PLUS, MINUS, EQ, LT, GT 등 토큰 상수
+#include "parser.tab.h" 
 
 // 심볼 테이블
 struct Symbol { char name[32]; int val; };
@@ -59,7 +59,7 @@ ASTNode* new_bin_op_node(int op_type, ASTNode* left, ASTNode* right) {
 ASTNode* new_assign_node(char* name, ASTNode* expr) {
     IDNode* node = malloc(sizeof(IDNode));
     node->base.type = NOD_ASSIGN;
-    node->base.left = NULL; // 대입문의 왼쪽(변수명)은 노드 내부에 저장됨
+    node->base.left = NULL; 
     node->base.right = expr;
     strcpy(node->name, name);
     return (ASTNode*)node;
@@ -81,6 +81,21 @@ ASTNode* new_if_node(ASTNode* cond, ASTNode* stmt) {
     return node;
 }
 
+ASTNode* new_while_node(ASTNode* cond, ASTNode* stmt) {
+    ASTNode* node = malloc(sizeof(ASTNode));
+    node->type = NOD_WHILE;
+    node->left = cond;
+    node->right = stmt;
+    return node;
+}
+
+ASTNode* new_scan_node() {
+    ASTNode* node = malloc(sizeof(ASTNode));
+    node->type = NOD_SCAN;
+    node->left = NULL; node->right = NULL;
+    return node;
+}
+
 ASTNode* new_block_node(ASTNode* left, ASTNode* right) {
     ASTNode* node = malloc(sizeof(ASTNode));
     node->type = NOD_BLOCK;
@@ -89,23 +104,16 @@ ASTNode* new_block_node(ASTNode* left, ASTNode* right) {
     return node;
 }
 
-// --- AST 시각화 (Graphviz DOT 생성) --- 
+// --- AST 시각화 ---
 
 void generate_dot(ASTNode* node, FILE* fp) {
     if (!node) return;
     
-    // 현재 노드 그리기 (메모리 주소를 ID로 사용)
     fprintf(fp, "  node%p [label=\"", node);
 
     switch(node->type) {
-        case NOD_NUM: 
-            fprintf(fp, "%d", ((NumNode*)node)->value); 
-            break;
-            
-        case NOD_ID: 
-            fprintf(fp, "Var\\n%s", ((IDNode*)node)->name); 
-            break;
-            
+        case NOD_NUM: fprintf(fp, "%d", ((NumNode*)node)->value); break;
+        case NOD_ID: fprintf(fp, "Var\\n%s", ((IDNode*)node)->name); break;
         case NOD_BIN_OP: {
              int op = ((BinOpNode*)node)->op;
              if      (op == PLUS)  fprintf(fp, "+");
@@ -115,46 +123,30 @@ void generate_dot(ASTNode* node, FILE* fp) {
              else if (op == EQ)    fprintf(fp, "==");
              else if (op == LT)    fprintf(fp, "<");
              else if (op == GT)    fprintf(fp, ">");
-             // 파이프 연산자 등이 있다면 여기에 추가
-             // else if (op == PIPE)  fprintf(fp, "|>");
              else                  fprintf(fp, "Op(%d)", op);
              break;
         }
-
-        case NOD_ASSIGN: 
-            // 대입 노드는 자식이 없고 내부에 이름을 가짐. 따라서 라벨에 표시
-            fprintf(fp, "Assign\\n(%s)", ((IDNode*)node)->name); 
-            break;
-            
-        case NOD_PRINT: 
-            fprintf(fp, "Print"); 
-            break;
-            
-        case NOD_IF: 
-            fprintf(fp, "IF"); 
-            break;
-            
-        case NOD_BLOCK: 
-            fprintf(fp, "Block"); 
-            break;
-            
-        default: 
-            fprintf(fp, "Unknown");
+        case NOD_ASSIGN: fprintf(fp, "Assign\\n(%s)", ((IDNode*)node)->name); break;
+        case NOD_PRINT: fprintf(fp, "Print"); break;
+        case NOD_IF: fprintf(fp, "IF"); break;
+        case NOD_WHILE: fprintf(fp, "WHILE"); break;
+        case NOD_SCAN: fprintf(fp, "SCAN"); break;
+        case NOD_BLOCK: fprintf(fp, "Block"); break;
+        default: fprintf(fp, "Unknown");
     }
     fprintf(fp, "\"];\n");
 
-    // 자식 노드 연결선 그리기 (재귀 호출)
     if (node->left) {
-        fprintf(fp, "  node%p -> node%p [label=\"L\"];\n", node, node->left);
+        fprintf(fp, "  node%p -> node%p;\n", node, node->left);
         generate_dot(node->left, fp);
     }
     if (node->right) {
-        fprintf(fp, "  node%p -> node%p [label=\"R\"];\n", node, node->right);
+        fprintf(fp, "  node%p -> node%p;\n", node, node->right);
         generate_dot(node->right, fp);
     }
 }
 
-// --- 인터프리터 실행 (Eval) ---
+// --- 인터프리터 실행 (Eval & UI) ---
 
 int eval(ASTNode* node) {
     if (!node) return 0;
@@ -192,7 +184,30 @@ int eval(ASTNode* node) {
         
         case NOD_PRINT: {
             int val = eval(node->left);
-            printf("%d\n", val);
+            
+            if (val == 900) {
+                printf("\n======================================\n");
+                printf("      🎮  UP & DOWN GAME  🎮\n");
+                printf("     (Guess Number: 0 ~ 100)\n");
+                printf("======================================\n");
+            } 
+            else if (val == 800) {
+                printf("👀 [CHEAT MODE] Answer is: "); 
+            }
+            else if (val == 1) {
+                printf("   ▲ UP! (더 큰 수입니다)\n");
+            }
+            else if (val == 2) {
+                printf("   ▼ DOWN! (더 작은 수입니다)\n");
+            }
+            // ★ 수정됨: 승리 코드를 7에서 7777로 변경 (숫자 7과 겹침 방지)
+            else if (val == 7777) {
+                printf("\n   🎉 CORRECT! 정답입니다! 🎉\n");
+                printf("======================================\n\n");
+            }
+            else {
+                printf("%d\n", val);
+            }
             return val;
         }
 
@@ -202,34 +217,58 @@ int eval(ASTNode* node) {
             return 0;
             
         case NOD_IF:
-            if (eval(node->left)) // 조건이 참이면
-                eval(node->right); // 실행
+            if (eval(node->left))
+                eval(node->right);
             return 0;
+
+        case NOD_WHILE:
+            while (eval(node->left)) {
+                eval(node->right);
+            }
+            return 0;
+
+        case NOD_SCAN: {
+            int input_val;
+            printf("   👉 Input Number: ");
+            if (scanf("%d", &input_val) != 1) {
+                printf("Runtime Error: Invalid Input (Expected Integer)\n");
+                exit(1);
+            }
+            return input_val;
+        }
     }
     return 0;
 }
 
-int main() {
+// ★ 핵심 수정: 파일을 인자로 받을 수 있게 main 함수 변경 ★
+int main(int argc, char** argv) {
     extern ASTNode* root;
     extern int yyparse();
-    
-    printf(">>> Interpreter Start (Type code and press Ctrl+D to run)\n");
-    
-    if (yyparse() == 0) {
-        printf(">>> Syntax OK. Executing...\n");
-        eval(root); // 실행
+    extern FILE* yyin; // Flex의 입력 파일 포인터
 
-        // --- AST 파일 생성 로직 추가 ---
+    // 파일명이 들어왔다면 파일에서 읽기
+    if (argc > 1) {
+        yyin = fopen(argv[1], "r");
+        if (!yyin) {
+            fprintf(stderr, "Error: Cannot open file '%s'\n", argv[1]);
+            return 1;
+        }
+    } 
+    // 파일명이 없으면 stdin(기존 방식) 유지
+
+    if (yyparse() == 0) {
+        // AST 시각화 파일 생성
         FILE* fp = fopen("ast.dot", "w");
-        if (fp) {
+        if(fp) {
             fprintf(fp, "digraph AST {\n");
-            fprintf(fp, "  node [shape=box, fontname=\"Arial\"];\n"); // 노드 스타일 설정
+            fprintf(fp, "  node [shape=box, fontname=\"Arial\"];\n");
             generate_dot(root, fp);
             fprintf(fp, "}\n");
             fclose(fp);
-            printf(">>> AST generated: ast.dot\n");
-            printf(">>> (Use 'dot -Tpng ast.dot -o ast.png' to visualize)\n");
         }
+
+        // 인터프리터 실행 (이제 stdin은 사용자 입력용으로 깨끗하게 비워져 있음)
+        eval(root); 
     }
     return 0;
 }
