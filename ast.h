@@ -7,8 +7,8 @@ typedef enum {
     NOD_BIN_OP, // 이항 연산
     NOD_ASSIGN, // 대입
     NOD_IF,     // IF 문
-    NOD_WHILE,  // WHILE 문 (NEW!)
-    NOD_SCAN,   // 입력 함수 (NEW!)
+    NOD_WHILE,  // WHILE 문
+    NOD_SCAN,   // 입력 함수 
     NOD_PRINT,  // 출력
     NOD_BLOCK   // 블록
 } NodeType;
