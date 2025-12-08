@@ -4,6 +4,10 @@
 #include "ast.h"
 #include "parser.tab.h" 
 
+// Flex의 전역 변수들
+extern int yyparse();
+extern FILE* yyin; 
+
 // 심볼 테이블
 struct Symbol { char name[32]; int val; };
 struct Symbol sym_table[100];
@@ -108,9 +112,7 @@ ASTNode* new_block_node(ASTNode* left, ASTNode* right) {
 
 void generate_dot(ASTNode* node, FILE* fp) {
     if (!node) return;
-    
     fprintf(fp, "  node%p [label=\"", node);
-
     switch(node->type) {
         case NOD_NUM: fprintf(fp, "%d", ((NumNode*)node)->value); break;
         case NOD_ID: fprintf(fp, "Var\\n%s", ((IDNode*)node)->name); break;
@@ -135,7 +137,6 @@ void generate_dot(ASTNode* node, FILE* fp) {
         default: fprintf(fp, "Unknown");
     }
     fprintf(fp, "\"];\n");
-
     if (node->left) {
         fprintf(fp, "  node%p -> node%p;\n", node, node->left);
         generate_dot(node->left, fp);
@@ -146,29 +147,22 @@ void generate_dot(ASTNode* node, FILE* fp) {
     }
 }
 
-// --- 인터프리터 실행 (Eval & UI) ---
+// --- 인터프리터 실행 ---
 
 int eval(ASTNode* node) {
     if (!node) return 0;
-
     switch (node->type) {
-        case NOD_NUM:
-            return ((NumNode*)node)->value;
-            
-        case NOD_ID:
-            return get_val(((IDNode*)node)->name);
-
+        case NOD_NUM: return ((NumNode*)node)->value;
+        case NOD_ID: return get_val(((IDNode*)node)->name);
         case NOD_ASSIGN: {
             int val = eval(node->right);
             set_val(((IDNode*)node)->name, val);
             return val;
         }
-
         case NOD_BIN_OP: {
             int lhs = eval(node->left);
             int rhs = eval(node->right);
             int op = ((BinOpNode*)node)->op;
-
             if (op == PLUS) return lhs + rhs;
             if (op == MINUS) return lhs - rhs;
             if (op == MULT) return lhs * rhs;
@@ -181,57 +175,42 @@ int eval(ASTNode* node) {
             if (op == GT) return lhs > rhs;
             return 0;
         }
-        
         case NOD_PRINT: {
             int val = eval(node->left);
-            
             if (val == 900) {
                 printf("\n======================================\n");
                 printf("      🎮  UP & DOWN GAME  🎮\n");
                 printf("     (Guess Number: 0 ~ 100)\n");
                 printf("======================================\n");
-            } 
-            else if (val == 800) {
+            } else if (val == 800) {
                 printf("👀 [CHEAT MODE] Answer is: "); 
-            }
-            else if (val == 1) {
+            } else if (val == 1) {
                 printf("   ▲ UP! (더 큰 수입니다)\n");
-            }
-            else if (val == 2) {
+            } else if (val == 2) {
                 printf("   ▼ DOWN! (더 작은 수입니다)\n");
-            }
-            // ★ 수정됨: 승리 코드를 7에서 7777로 변경 (숫자 7과 겹침 방지)
-            else if (val == 7777) {
+            } else if (val == 7777) {
                 printf("\n   🎉 CORRECT! 정답입니다! 🎉\n");
                 printf("======================================\n\n");
-            }
-            else {
+            } else {
                 printf("%d\n", val);
             }
             return val;
         }
-
         case NOD_BLOCK:
             eval(node->left);
             eval(node->right);
             return 0;
-            
         case NOD_IF:
-            if (eval(node->left))
-                eval(node->right);
+            if (eval(node->left)) eval(node->right);
             return 0;
-
         case NOD_WHILE:
-            while (eval(node->left)) {
-                eval(node->right);
-            }
+            while (eval(node->left)) eval(node->right);
             return 0;
-
         case NOD_SCAN: {
             int input_val;
             printf("   👉 Input Number: ");
             if (scanf("%d", &input_val) != 1) {
-                printf("Runtime Error: Invalid Input (Expected Integer)\n");
+                printf("Runtime Error: Invalid Input\n");
                 exit(1);
             }
             return input_val;
@@ -240,13 +219,11 @@ int eval(ASTNode* node) {
     return 0;
 }
 
-// ★ 핵심 수정: 파일을 인자로 받을 수 있게 main 함수 변경 ★
+// ★★★ 메인 함수 (메뉴 수정됨) ★★★
 int main(int argc, char** argv) {
     extern ASTNode* root;
-    extern int yyparse();
-    extern FILE* yyin; // Flex의 입력 파일 포인터
-
-    // 파일명이 들어왔다면 파일에서 읽기
+    
+    // 1. 파일명을 인자로 준 경우 (예: ./my_interpreter test.mc)
     if (argc > 1) {
         yyin = fopen(argv[1], "r");
         if (!yyin) {
@@ -254,10 +231,53 @@ int main(int argc, char** argv) {
             return 1;
         }
     } 
-    // 파일명이 없으면 stdin(기존 방식) 유지
+    // 2. 인자 없이 실행한 경우 -> "메뉴 모드"
+    else {
+        int choice;
 
+        while (1) {
+            printf("\n========================================\n");
+            printf("   🚀 My Language Interpreter v1.0 🚀\n");
+            printf("========================================\n");
+            printf("  1. 🧮 Simple Calculator (Interactive)\n");
+            printf("  2. 🎮 Up & Down Game (Demo)\n");
+            printf("  3. ❌ Exit\n");  // 3번 옵션: 종료
+            printf("========================================\n");
+            printf("Select Menu >> ");
+            scanf("%d", &choice);
+
+            // 입력 버퍼 비우기
+            while (getchar() != '\n');
+
+            if (choice == 1) {
+                printf("\n>>> [Calculator Mode] Enter formulas (e.g. 3+5;). Press Ctrl+D to finish.\n");
+                printf(">>> Warning: 'scan()' is not supported in this mode.\n");
+                yyin = stdin; 
+                break; // 메뉴 루프 탈출 -> 실행
+            }
+            else if (choice == 2) {
+                printf("\n>>> Loading 'game.mc'...\n");
+                yyin = fopen("game.mc", "r");
+                if (!yyin) {
+                    printf("Error: 'game.mc' file not found!\n");
+                    continue; 
+                }
+                break; // 메뉴 루프 탈출 -> 실행
+            }
+            else if (choice == 3) { // 3번 선택 시 종료
+                printf("Good Bye!\n");
+                return 0;
+            }
+            else {
+                printf("Invalid selection!\n");
+            }
+        }
+    }
+
+    // 선택된 모드로 실행
     if (yyparse() == 0) {
-        // AST 시각화 파일 생성
+        printf("\n"); // 결과 출력 전 줄바꿈
+        
         FILE* fp = fopen("ast.dot", "w");
         if(fp) {
             fprintf(fp, "digraph AST {\n");
@@ -267,8 +287,8 @@ int main(int argc, char** argv) {
             fclose(fp);
         }
 
-        // 인터프리터 실행 (이제 stdin은 사용자 입력용으로 깨끗하게 비워져 있음)
         eval(root); 
     }
+    
     return 0;
 }
