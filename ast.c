@@ -188,6 +188,8 @@ int eval(ASTNode* node) {
                 printf("   ▲ UP! (더 큰 수입니다)\n");
             } else if (val == 2) {
                 printf("   ▼ DOWN! (더 작은 수입니다)\n");
+            } else if (val == 99) {
+                printf("   ⚠️  ERROR: 0~100 사이의 숫자를 입력하세요! ⚠️\n");
             } else if (val == 7777) {
                 printf("\n   🎉 CORRECT! 정답입니다! 🎉\n");
                 printf("======================================\n\n");
@@ -219,60 +221,48 @@ int eval(ASTNode* node) {
     return 0;
 }
 
-// ★★★ 메인 함수 (메뉴 수정됨) ★★★
 int main(int argc, char** argv) {
     extern ASTNode* root;
-    
-    // 1. 파일명을 인자로 준 경우 (예: ./my_interpreter test.mc)
-    if (argc > 1) {
-        yyin = fopen(argv[1], "r");
-        if (!yyin) {
-            fprintf(stderr, "Error: Cannot open file '%s'\n", argv[1]);
-            return 1;
+
+    int choice;
+
+    while (1) {
+        printf("\n========================================\n");
+        printf("   🚀 My Language Interpreter v1.0 🚀\n");
+        printf("========================================\n");
+        printf("  1. 🧮 Simple Calculator\n");
+        printf("  2. 🎮 Up & Down Game\n");
+        printf("  3. ❌ Exit\n"); 
+        printf("========================================\n");
+        printf("Select Menu >> ");
+        scanf("%d", &choice);
+
+        // 입력 버퍼 비우기
+        while (getchar() != '\n');
+
+        if (choice == 1) {
+            printf("\n>>> [Calculator Mode] Enter formulas (e.g. 3+5;). Press Ctrl+D to finish.\n");
+            yyin = stdin; 
+            break; // 메뉴 루프 탈출 -> 실행
         }
-    } 
-    // 2. 인자 없이 실행한 경우 -> "메뉴 모드"
-    else {
-        int choice;
-
-        while (1) {
-            printf("\n========================================\n");
-            printf("   🚀 My Language Interpreter v1.0 🚀\n");
-            printf("========================================\n");
-            printf("  1. 🧮 Simple Calculator (Interactive)\n");
-            printf("  2. 🎮 Up & Down Game (Demo)\n");
-            printf("  3. ❌ Exit\n");  // 3번 옵션: 종료
-            printf("========================================\n");
-            printf("Select Menu >> ");
-            scanf("%d", &choice);
-
-            // 입력 버퍼 비우기
-            while (getchar() != '\n');
-
-            if (choice == 1) {
-                printf("\n>>> [Calculator Mode] Enter formulas (e.g. 3+5;). Press Ctrl+D to finish.\n");
-                printf(">>> Warning: 'scan()' is not supported in this mode.\n");
-                yyin = stdin; 
-                break; // 메뉴 루프 탈출 -> 실행
+        else if (choice == 2) {
+            printf("\n>>> Loading 'game.mc'...\n");
+            yyin = fopen("game.mc", "r");
+            if (!yyin) {
+                printf("Error: 'game.mc' file not found!\n");
+                continue; 
             }
-            else if (choice == 2) {
-                printf("\n>>> Loading 'game.mc'...\n");
-                yyin = fopen("game.mc", "r");
-                if (!yyin) {
-                    printf("Error: 'game.mc' file not found!\n");
-                    continue; 
-                }
-                break; // 메뉴 루프 탈출 -> 실행
-            }
-            else if (choice == 3) { // 3번 선택 시 종료
-                printf("Good Bye!\n");
-                return 0;
-            }
-            else {
-                printf("Invalid selection!\n");
-            }
+            break; // 메뉴 루프 탈출 -> 실행
+        }
+        else if (choice == 3) { // 3번 선택 시 종료
+            printf("Good Bye!\n");
+            return 0;
+        }
+        else {
+            printf("Invalid selection!\n");
         }
     }
+    
 
     // 선택된 모드로 실행
     if (yyparse() == 0) {
