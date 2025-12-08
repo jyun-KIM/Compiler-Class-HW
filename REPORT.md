@@ -27,11 +27,11 @@
 
 ```mermaid
 flowchart LR
-    SourceCode[.mc File] --> Lexer[Lexer (Flex)]
-    Lexer -- Tokens --> Parser[Parser (Bison)]
-    Parser -- Abstract Syntax Tree (AST) --> Interpreter[Evaluator (C)]
+    SourceCode[".mc File"] --> Lexer["Lexer (Flex)"]
+    Lexer -- Tokens --> Parser["Parser (Bison)"]
+    Parser -- "Abstract Syntax Tree (AST)" --> Interpreter["Evaluator (C)"]
     Interpreter --> ExecutionResult[Output]
-    Interpreter -.-> Visualization[ast.dot File]
+    Interpreter -.-> Visualization["ast.dot File"]
 ```
 
 1.  **Lexer (`scanner.l`)**: 입력된 문자열을 정규 표현식 규칙에 따라 토큰(Token)으로 분리합니다.

@@ -12,6 +12,7 @@ extern FILE* yyin;
 struct Symbol { char name[32]; int val; };
 struct Symbol sym_table[100];
 int sym_count = 0;
+int is_game_mode = 0;
 
 int get_val(char* name) {
     for(int i=0; i<sym_count; i++) {
@@ -177,26 +178,29 @@ int eval(ASTNode* node) {
         }
         case NOD_PRINT: {
             int val = eval(node->left);
-            if (val == 900) {
-                printf("\n======================================\n");
-                printf("      🎮  UP & DOWN GAME  🎮\n");
-                printf("     (Guess Number: 0 ~ 100)\n");
-                printf("======================================\n");
-            } else if (val == 800) {
-                printf("👀 [CHEAT MODE] Answer is: "); 
-            } else if (val == 1) {
-                printf("   ▲ UP! (더 큰 수입니다)\n");
-            } else if (val == 2) {
-                printf("   ▼ DOWN! (더 작은 수입니다)\n");
-            } else if (val == 99) {
-                printf("   ⚠️  ERROR: 0~100 사이의 숫자를 입력하세요! ⚠️\n");
-            } else if (val == 7777) {
-                printf("\n   🎉 CORRECT! 정답입니다! 🎉\n");
-                printf("======================================\n\n");
-            } else {
+            if (is_game_mode) {
+                if (val == 900) {
+                    printf("\n======================================\n");
+                    printf("      🎮  UP & DOWN GAME  🎮\n");
+                    printf("     (Guess Number: 0 ~ 100)\n");
+                    printf("======================================\n");
+                } else if (val == 800) {
+                    printf("👀 [CHEAT MODE] Answer is: "); 
+                } else if (val == 1) {
+                    printf("   ▲ UP! (더 큰 수입니다)\n");
+                } else if (val == 2) {
+                    printf("   ▼ DOWN! (더 작은 수입니다)\n");
+                } else if (val == 99) {
+                    printf("   ⚠️  ERROR: 0~100 사이의 숫자를 입력하세요! ⚠️\n");
+                } else if (val == 7777) {
+                    printf("\n   🎉 CORRECT! 정답입니다! 🎉\n");
+                    printf("======================================\n\n");
+                }else {
+                    printf("%d\n", val);
+                }
+            } else{
                 printf("%d\n", val);
             }
-            return val;
         }
         case NOD_BLOCK:
             eval(node->left);
@@ -243,11 +247,13 @@ int main(int argc, char** argv) {
         if (choice == 1) {
             printf("\n>>> [Calculator Mode] Enter formulas (e.g. 3+5;). Press Ctrl+D to finish.\n");
             yyin = stdin; 
+            is_game_mode = 0;
             break; // 메뉴 루프 탈출 -> 실행
         }
         else if (choice == 2) {
             printf("\n>>> Loading 'game.mc'...\n");
             yyin = fopen("game.mc", "r");
+            is_game_mode = 1;
             if (!yyin) {
                 printf("Error: 'game.mc' file not found!\n");
                 continue; 
